@@ -25,7 +25,6 @@ for geoplace in local_geoplaces_file:
 local_geoplaces_file.close()
 
 local_geoplaces_file = open('data/local_geoplaces.txt', 'a')
-local_geoplaces_logs = open('data/local_geoplaces.log', 'a')
 for question in local_questions_file:
     uri = local_uris_file.readline().strip()
     params = urllib.urlencode({
@@ -56,11 +55,9 @@ for question in local_questions_file:
         document_xml = etree.tostring(document).strip()
         document_xml = document_xml.replace('\t', ' ').replace('\n', ' ')
     local_geoplaces_file.write("%s\n" % document_xml)
-    local_geoplaces_logs.write("%s\n" % uri)
     placemaker_xml.close()
     sleep(0.02);
 local_geoplaces_file.close()
-local_geoplaces_logs.close()
 
 local_uris_file.close()
 local_questions_file.close()
