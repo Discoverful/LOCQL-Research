@@ -12,7 +12,7 @@
       <div><input type="text" name="content" size="200"></input></div>
       <div><input type="submit" value="Ask a Question"></div>
     </form>
-    <p>OK, so you are interested to know<br />&quot;<b>{{ current_focus|escape }}</b>&quot;</p>
+    <p>OK, so you are interested to know<br />&quot;{{ current_focus }}&quot;</p>
     <p>It took me <font color="red">{{ response_time }}</font> milliseconds to remember that:</p>
     <ol>
     {% for question in questions %}

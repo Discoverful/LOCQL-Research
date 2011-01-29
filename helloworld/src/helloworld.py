@@ -44,10 +44,12 @@ def text2terms(text):
                  if ((len(term)>1) and (term not in STOP_WORDS))]
     return frozenset(term_list)
 
-questions = None
-current_focus = "..."
 import time
+from placemaker import geoparsing
+
+questions = None
 response_time = "*"
+current_focus = "..."
 
 class Question(db.Model):
     author = db.UserProperty()
@@ -62,8 +64,8 @@ class TermStats(db.Model):
 class MainPage(webapp.RequestHandler):
     def get(self):
         global questions
-        global current_focus
         global response_time
+        global current_focus
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
             url_linktext = 'Logout'
@@ -80,8 +82,8 @@ class MainPage(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
         questions = None
-        current_focus = "..."
         response_time = "*"
+        current_focus = "..."
 
 # def jaccard_coefficient(a,b):
 #     c = [v for v in a if v in b]
@@ -98,8 +100,8 @@ def question_score(question, term_dict):
 class Search(webapp.RequestHandler):
     def post(self):
         global questions
-        global current_focus
         global response_time
+        global current_focus
         question_content = self.request.get('content').strip()
         t = time.time()
         query_terms = text2terms(question_content)
@@ -137,8 +139,8 @@ class Search(webapp.RequestHandler):
                                    key=lambda question: question_score(question,term_dict),
                                    reverse=True)
                 questions = questions[:10]
-        current_focus = question_content
         response_time = (time.time()-t)*1000
+        current_focus = geoparsing(question_content)
         self.redirect('/')
 
 def update_termstats(term, docfreq):
@@ -156,8 +158,8 @@ def update_termstats(term, docfreq):
 class Ask(webapp.RequestHandler):
     def post(self):
         global questions
-        global current_focus
         global response_time
+        global current_focus
         question = Question()
         if users.get_current_user():
             question.author = users.get_current_user()
@@ -169,8 +171,8 @@ class Ask(webapp.RequestHandler):
             for term in question.terms:
                 update_termstats(term, 1)
         questions = None
-        current_focus = question.content
         response_time = (time.time()-t)*1000
+        current_focus = geoparsing(question.content)
         self.redirect('/')
 
 from collections import defaultdict
