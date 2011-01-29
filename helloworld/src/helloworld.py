@@ -89,10 +89,11 @@ class MainPage(webapp.RequestHandler):
 #     return float(len(c))/(len(a)+len(b)-len(c))
 
 def question_score(question, term_dict):
-    score = 0
+    score = 0.0
     for term in question.terms:
         if term in term_dict:
-            score += 1+(1/(term_dict[term]+1))
+            score += 1.0+(1.0/(term_dict[term]+1.0))
+    score /= len(question.terms)
     return score
 
 class Search(webapp.RequestHandler):
