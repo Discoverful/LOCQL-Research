@@ -18,6 +18,8 @@ def geoparsing(text):
     placemaker_etree = ET.parse(placemaker_xml)
     placemaker_xml.close()
     references = placemaker_etree.find(ns+'document/'+ns+'referenceList')
+    if not references:
+        return text
     place_segments = []
     for ref in references:
         start = int(ref.findtext(ns+'start'))
