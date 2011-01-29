@@ -12,15 +12,20 @@
       <div><input type="text" name="content" size="200"></input></div>
       <div><input type="submit" value="Ask a Question"></div>
     </form>
-    <p>It took <font color="red">{{ response_time }}</font> milliseconds</p>
+    <p>OK, so you are interested to know<br />&quot;<b>{{ current_focus|escape }}</b>&quot;</p>
+    <p>It took me <font color="red">{{ response_time }}</font> milliseconds to remember that:</p>
+    <ol>
     {% for question in questions %}
+      <li>
       {% if question.author %}
-        <b>{{ question.author.nickname }}</b> asked:
+        <i>{{ question.author.nickname }}</i> asked:
       {% else %}
-        An anonymous person asked:
+        <i>An anonymous person</i> asked:
       {% endif %}
       <blockquote>{{ question.content|escape }}</blockquote>
+      </li>
     {% endfor %}
+    </ol>
     <hr />
     <p><font color="green">Admin Tools</font></p>
     <form action="/load" enctype="multipart/form-data" method="post">

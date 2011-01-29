@@ -44,10 +44,10 @@ def text2terms(text):
                  if ((len(term)>1) and (term not in STOP_WORDS))]
     return frozenset(term_list)
 
-import time
-response_time = 0
-
 questions = None
+current_focus = "..."
+import time
+response_time = "*"
 
 class Question(db.Model):
     author = db.UserProperty()
@@ -61,28 +61,27 @@ class TermStats(db.Model):
 
 class MainPage(webapp.RequestHandler):
     def get(self):
+        global questions
+        global current_focus
+        global response_time
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
             url_linktext = 'Logout'
         else:
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
-        global questions
-        global response_time
-        if questions == None:
-            question_query = Question.all()
-            question_query.order("-date")
-            questions = question_query.fetch(10)
         template_values = {
             'url': url,
             'url_linktext': url_linktext,
             'questions': questions,
+            'current_focus': current_focus,
             'response_time': response_time
         }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
         questions = None
-        response_time = 0
+        current_focus = "..."
+        response_time = "*"
 
 # def jaccard_coefficient(a,b):
 #     c = [v for v in a if v in b]
@@ -98,11 +97,12 @@ def question_score(question, term_dict):
 
 class Search(webapp.RequestHandler):
     def post(self):
-        question_content = self.request.get('content').strip()
+        global questions
+        global current_focus
         global response_time
+        question_content = self.request.get('content').strip()
         t = time.time()
         query_terms = text2terms(question_content)
-        global questions
         questions = []
         # NOTE: 
         # the following code uses list-properties and merge-join to implement keyword search
@@ -137,6 +137,7 @@ class Search(webapp.RequestHandler):
                                    key=lambda question: question_score(question,term_dict),
                                    reverse=True)
                 questions = questions[:10]
+        current_focus = question_content
         response_time = (time.time()-t)*1000
         self.redirect('/')
 
@@ -154,17 +155,21 @@ def update_termstats(term, docfreq):
     
 class Ask(webapp.RequestHandler):
     def post(self):
+        global questions
+        global current_focus
+        global response_time
         question = Question()
         if users.get_current_user():
             question.author = users.get_current_user()
         question.content = self.request.get('content').strip()
-        global response_time
         t = time.time()
         question.terms = list(text2terms(question.content))
         if question.terms:
             question.put()
             for term in question.terms:
                 update_termstats(term, 1)
+        questions = None
+        current_focus = question.content
         response_time = (time.time()-t)*1000
         self.redirect('/')
 
