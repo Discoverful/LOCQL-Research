@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body>
+    <p><a href="{{ url }}">{{ url_linktext }}</a></p>
+    <form action="/search" method="post">
+      <div><input type="text" name="content" size="200"></input></div>
+      <div><input type="submit" value="Search Questions"></div>
+    </form>
+    <form action="/ask" method="post">
+      <div><input type="text" name="content" size="200"></input></div>
+      <div><input type="submit" value="Ask a Question"></div>
+    </form>
+    <p>It took <font color="red">{{ response_time }}</font> milliseconds</p>
+    {% for question in questions %}
+      {% if question.author %}
+        <b>{{ question.author.nickname }}</b> asked:
+      {% else %}
+        An anonymous person asked:
+      {% endif %}
+      <blockquote>{{ question.content|escape }}</blockquote>
+    {% endfor %}
+    <hr />
+    <p><font color="green">Admin Tools</font></p>
+    <form action="/load" enctype="multipart/form-data" method="post">
+      <div><input type="file" name="questions_file" size="200"></input></div>
+      <div><input type="submit" value="Load Questions"></div>
+    </form>
+    <form action="/clear" method="post">
+      <div><input type="submit" value="Clear Questions"></div>
+    </form>
+    <hr />
+  </body>
+</html>
