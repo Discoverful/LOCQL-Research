@@ -42,7 +42,7 @@ def text2terms(text):
     term_list = [stem(term)
                  for term in splitter.split(text.lower()) 
                  if ((len(term)>1) and (term not in STOP_WORDS))]
-    return frozenset(term_list)
+    return list(frozenset(term_list))
 
 import time
 from placemaker import geoparsing
@@ -118,7 +118,7 @@ class Search(webapp.RequestHandler):
         #
         if query_terms:
             termstats_query = TermStats.all()
-            termstats_query.filter("term IN", list(query_terms))
+            termstats_query.filter("term IN", query_terms)
             termstats_query.order("docfreq")
             termstatses = termstats_query.fetch(50) # the maximum number of terms in a question
             best_terms = []
@@ -167,7 +167,7 @@ class Ask(webapp.RequestHandler):
             question.author = users.get_current_user()
         question.content = self.request.get('content').strip()
         t = time.time()
-        question.terms = list(text2terms(question.content))
+        question.terms = text2terms(question.content)
         if question.terms:
             question.put()
             for term in question.terms:
@@ -192,7 +192,7 @@ class Load(webapp.RequestHandler):
             if users.get_current_user():
                 question.author = users.get_current_user()
             question.content = content.decode('utf-8')
-            question.terms = list(text2terms(question.content))
+            question.terms = text2terms(question.content)
             if not question.terms:
                 continue
             questions.append(question)
