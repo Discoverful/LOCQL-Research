@@ -120,21 +120,23 @@ class Search(webapp.RequestHandler):
             termstats_query = TermStats.all()
             termstats_query.filter("term IN", list(query_terms))
             termstats_query.order("docfreq")
-            termstatses = termstats_query.fetch(200)
+            termstatses = termstats_query.fetch(50) # the maximum number of terms in a question
             best_terms = []
             term_dict = {}
+            k = 0
             for termstats in termstatses:
+                k += 1
                 if not best_terms:
                     best_terms.append(termstats.term)
                 else:
-                    if termstats.docfreq <= 10:
+                    if (k <= 5) and (termstats.docfreq <= 10):
                         best_terms.append(termstats.term)
                 term_dict[termstats.term] = termstats.docfreq
             if best_terms:
                 question_query = Question.all()
                 question_query.filter("terms IN", best_terms)
                 question_query.order("-date")
-                questions = question_query.fetch(50)
+                questions = question_query.fetch(50) # the number of questions to be ranked
                 questions = sorted(questions,
                                    key=lambda question: question_score(question,term_dict),
                                    reverse=True)
