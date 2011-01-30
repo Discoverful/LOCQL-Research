@@ -93,7 +93,7 @@ def question_score(question, term_dict):
     score = 0.0
     for term in question.terms:
         if term in term_dict:
-            score += (1.0+(1.0/(term_dict[term]+1.0)))^2
+            score += (1.0+(1.0/(term_dict[term]+1.0)))**2
     score /= len(question.terms)
     return score
 
