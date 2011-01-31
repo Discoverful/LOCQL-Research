@@ -10,7 +10,7 @@ def geoparsing(text):
     params = urllib.urlencode({
     	'appid': appid,
         'documentType': 'text/plain',
-    	'documentContent': text
+    	'documentContent': text.encode('utf-8')
     })
     placemaker_xml = urllib2.urlopen(url, params)
     if not placemaker_xml:
@@ -26,7 +26,6 @@ def geoparsing(text):
         end = int(ref.findtext(ns+'end'))
         place_segments.append((start,end))
     place_segments.sort()
-    text = text.decode('utf-8')
     result = ""
     i = 0
     for (start,end) in place_segments:
@@ -34,7 +33,7 @@ def geoparsing(text):
         result += "<u><b>"+text[start:end]+"</b></u>"
         i = end
     result += text[i:]
-    return result.encode('utf-8')
+    return result
 
 if __name__ == "__main__":
-    print geoparsing("How long does it take to fly from San Francisco to Shanghai, China?")
+    print geoparsing(u"How long does it take to fly from San Francisco to Shanghai, China?")
