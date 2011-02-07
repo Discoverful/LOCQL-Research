@@ -61,50 +61,54 @@ def question_score(question, term_dict):
     score /= len(question.terms)
     return score
 
+def find_relevant_questions(query):
+    query_terms = extract_terms(query)
+    # NOTE: 
+    # the following code uses list-properties and merge-join to implement keyword search
+    # but it leads to the problem of exploding index if len(query_terms) >= 2
+    #
+    # select_str = "SELECT * FROM Question WHERE"
+    # where_str = " AND ".join([("terms = '%s'" % term) for term in query_terms])
+    # order_str = "ORDER BY create_time DESC" # useful as sorted() is guaranteed to be stable
+    # limit_str = "LIMIT 200"
+    # questions = db.GqlQuery(select_str+" "+where_str+" "+order_str+" "+limit_str)
+    #
+    questions = []
+    if query_terms:
+        termstats_query = TermStats.all()
+        termstats_query.filter("term IN", query_terms)
+        termstats_query.order("docfreq")
+        termstatses = termstats_query.fetch(50) # the maximum number of terms in a question
+        best_terms = []
+        term_dict = {}
+        k = 0
+        for termstats in termstatses:
+            k += 1
+            if not best_terms:
+                best_terms.append(termstats.term)
+            else:
+                if (k <= 5) and (termstats.docfreq <= 10):
+                    best_terms.append(termstats.term)
+            term_dict[termstats.term] = termstats.docfreq
+        if best_terms:
+            question_query = Question.all()
+            question_query.filter("terms IN", best_terms)
+            question_query.order("-create_time")
+            questions = question_query.fetch(50) # the number of questions to be ranked
+            questions = sorted(questions,
+                               key=lambda question: question_score(question,term_dict),
+                               reverse=True)
+            questions = questions[:10]
+    return questions
+
 class Find(webapp.RequestHandler):
     def post(self):
         global questions
         global response_time
         global current_focus
-        query = self.request.get('title').strip()
         t = time.time()
-        query_terms = extract_terms(query)
-        questions = []
-        # NOTE: 
-        # the following code uses list-properties and merge-join to implement keyword search
-        # but it leads to the problem of exploding index if len(query_terms) >= 2
-        #
-        # select_str = "SELECT * FROM Question WHERE"
-        # where_str = " AND ".join([("terms = '%s'" % term) for term in query_terms])
-        # order_str = "ORDER BY create_time DESC" # useful as sorted() is guaranteed to be stable
-        # limit_str = "LIMIT 200"
-        # questions = db.GqlQuery(select_str+" "+where_str+" "+order_str+" "+limit_str)
-        #
-        if query_terms:
-            termstats_query = TermStats.all()
-            termstats_query.filter("term IN", query_terms)
-            termstats_query.order("docfreq")
-            termstatses = termstats_query.fetch(50) # the maximum number of terms in a question
-            best_terms = []
-            term_dict = {}
-            k = 0
-            for termstats in termstatses:
-                k += 1
-                if not best_terms:
-                    best_terms.append(termstats.term)
-                else:
-                    if (k <= 5) and (termstats.docfreq <= 10):
-                        best_terms.append(termstats.term)
-                term_dict[termstats.term] = termstats.docfreq
-            if best_terms:
-                question_query = Question.all()
-                question_query.filter("terms IN", best_terms)
-                question_query.order("-create_time")
-                questions = question_query.fetch(50) # the number of questions to be ranked
-                questions = sorted(questions,
-                                   key=lambda question: question_score(question,term_dict),
-                                   reverse=True)
-                questions = questions[:10]
+        query = self.request.get('title').strip()
+        questions = find_relevant_questions(query)
         response_time = (time.time()-t)*1000
         current_focus = geoparsing(query)
         self.redirect('/')
@@ -174,11 +178,13 @@ class Clear(webapp.RequestHandler):
         self.redirect('/')
 
 import json
-        
+
 class SearchAPI(webapp.RequestHandler):
     def get(self):
         query = self.request.get('query').strip()
-        self.response.out.write(json.dumps(query))
+        questions = find_relevant_questions(query)
+        question_ids = [question.key().id() for question in questions]
+        self.response.out.write(json.dumps(question_ids))
 
 class QuestionAPI(webapp.RequestHandler):
     def get(self):
