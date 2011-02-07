@@ -15,8 +15,3 @@ indexes:
   - name: terms
   - name: create_time
     direction: desc
-
-- kind: TermStats
-  properties:
-  - name: term
-  - name: docfreq

@@ -110,14 +110,18 @@ class Find(webapp.RequestHandler):
         current_focus = geoparsing(query)
         self.redirect('/')
 
-def update_termstats(term, more_docfreq):
-    termstats = TermStats.get_by_key_name(term)
-    if termstats:
-        termstats.docfreq += more_docfreq
-    else:
-        termstats = TermStats(key_name=term)
-        termstats.docfreq = more_docfreq
-    termstats.put()
+def update_termstats(term_dict):
+    terms = term_dict.keys()
+    termstatses = TermStats.get_by_key_name(terms)
+    for i in range(len(terms)):
+        term = terms[i]
+        more_docfreq = term_dict[term]
+        if termstatses[i]:
+            termstatses[i].docfreq += more_docfreq
+        else:
+            termstatses[i] = TermStats(key_name=term)
+            termstatses[i].docfreq = more_docfreq
+    db.put(termstatses)
 
 class Ask(webapp.RequestHandler):
     def post(self):
@@ -132,8 +136,8 @@ class Ask(webapp.RequestHandler):
         question.terms = extract_terms(question.title)
         if question.terms:
             question.put()
-            for term in question.terms:
-                update_termstats(term, 1)
+            term_dict = dict(zip(question.terms, [1]*len(question.terms)))
+            update_termstats(term_dict)
         questions = None
         response_time = (time.time()-t)*1000
         current_focus = geoparsing(question.title)
@@ -161,8 +165,7 @@ class Load(webapp.RequestHandler):
             for term in question.terms:
                 term_dict[term] += 1
         db.put(questions)
-        for term in term_dict:
-            update_termstats(term, term_dict[term])
+        update_termstats(term_dict)
         self.redirect('/')
 
 class Clear(webapp.RequestHandler):
