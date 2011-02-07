@@ -7,6 +7,8 @@ url = 'http://wherein.yahooapis.com/v1/document'
 ns = "{%s}" % 'http://wherein.yahooapis.com/v1/schema'
 
 def geoparsing(text):
+    if not text:
+        return ''
     params = urllib.urlencode({
     	'appid': appid,
         'documentType': 'text/plain',
