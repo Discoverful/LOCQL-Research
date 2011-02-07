@@ -104,7 +104,7 @@ class Find(webapp.RequestHandler):
         global response_time
         global current_focus
         t = time.time()
-        query = self.request.get('title').strip()
+        query = self.request.get('question_title').strip()
         questions = find_relevant_questions(query)
         response_time = (time.time()-t)*1000
         current_focus = geoparsing(query)
@@ -131,7 +131,7 @@ class Ask(webapp.RequestHandler):
         question = Question()
         if users.get_current_user():
             question.author = users.get_current_user()
-        question.title = self.request.get('title').strip()
+        question.title = self.request.get('question_title').strip()
         t = time.time()
         question.terms = extract_terms(question.title)
         if question.terms:
@@ -174,7 +174,7 @@ class Clear(webapp.RequestHandler):
         db.delete(TermStats.all(keys_only=True))
         self.redirect('/')
 
-import json
+import simplejson as json
 
 class SearchAPI(webapp.RequestHandler):
     def get(self):

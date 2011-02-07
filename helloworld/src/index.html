@@ -9,11 +9,11 @@
     <a href="{{ url }}">{{ url_linktext }}</a> your Google account
     </p>
     <form action="/find" method="post">
-      <div><input type="text" name="title" size="200"></input></div>
+      <div><input type="text" name="question_title" size="200"></input></div>
       <div><input type="submit" value="Find Questions"></div>
     </form>
     <form action="/ask" method="post">
-      <div><input type="text" name="title" size="200"></input></div>
+      <div><input type="text" name="question_title" size="200"></input></div>
       <div><input type="submit" value="Ask a Question"></div>
     </form>
     <p>OK, so you are interested to know<br /><blockquote>{{ current_focus }}</blockquote></p>
