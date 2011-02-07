@@ -54,8 +54,9 @@ current_focus = "..."
 class Question(db.Model):
     author = db.UserProperty()
     title = db.StringProperty()
+    place_id = db.IntegerProperty()
+    create_time = db.DateTimeProperty(auto_now_add=True)
     terms = db.StringListProperty()
-    date = db.DateTimeProperty(auto_now_add=True)
 
 class TermStats(db.Model):
     term = db.StringProperty()
@@ -112,7 +113,7 @@ class Find(webapp.RequestHandler):
         #
         # select_str = "SELECT * FROM Question WHERE"
         # where_str = " AND ".join([("terms = '%s'" % term) for term in query_terms])
-        # order_str = "ORDER BY date DESC" # useful as sorted() is guaranteed to be stable
+        # order_str = "ORDER BY create_time DESC" # useful as sorted() is guaranteed to be stable
         # limit_str = "LIMIT 200"
         # questions = db.GqlQuery(select_str+" "+where_str+" "+order_str+" "+limit_str)
         #
@@ -135,7 +136,7 @@ class Find(webapp.RequestHandler):
             if best_terms:
                 question_query = Question.all()
                 question_query.filter("terms IN", best_terms)
-                question_query.order("-date")
+                question_query.order("-create_time")
                 questions = question_query.fetch(50) # the number of questions to be ranked
                 questions = sorted(questions,
                                    key=lambda question: question_score(question,term_dict),

@@ -13,6 +13,12 @@ indexes:
 - kind: Question
   properties:
   - name: terms
+  - name: create_time
+    direction: desc
+
+- kind: Question
+  properties:
+  - name: terms
   - name: date
     direction: desc
 
