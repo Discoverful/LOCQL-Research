@@ -97,7 +97,7 @@ def question_score(question, term_dict):
     score /= len(question.terms)
     return score
 
-class Search(webapp.RequestHandler):
+class Find(webapp.RequestHandler):
     def post(self):
         global questions
         global response_time
@@ -210,7 +210,7 @@ class Clear(webapp.RequestHandler):
         self.redirect('/')
 
 application = webapp.WSGIApplication([('/', MainPage),
-                                      ('/search', Search),
+                                      ('/find', Find),
                                       ('/ask', Ask),
                                       ('/load', Load),
                                       ('/clear', Clear)],
