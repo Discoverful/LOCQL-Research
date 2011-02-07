@@ -9,11 +9,11 @@
     <a href="{{ url }}">{{ url_linktext }}</a> your Google account
     </p>
     <form action="/find" method="post">
-      <div><input type="text" name="content" size="200"></input></div>
+      <div><input type="text" name="title" size="200"></input></div>
       <div><input type="submit" value="Find Questions"></div>
     </form>
     <form action="/ask" method="post">
-      <div><input type="text" name="content" size="200"></input></div>
+      <div><input type="text" name="title" size="200"></input></div>
       <div><input type="submit" value="Ask a Question"></div>
     </form>
     <p>OK, so you are interested to know<br /><blockquote>{{ current_focus }}</blockquote></p>
@@ -26,7 +26,7 @@
       {% else %}
         <i>An anonymous person</i> asked:
       {% endif %}
-      <blockquote>{{ question.content|escape }}</blockquote>
+      <blockquote>{{ question.title|escape }}</blockquote>
       </li>
     {% endfor %}
     </ol>

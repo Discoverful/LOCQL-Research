@@ -53,7 +53,7 @@ current_focus = "..."
 
 class Question(db.Model):
     author = db.UserProperty()
-    content = db.StringProperty()
+    title = db.StringProperty()
     terms = db.StringListProperty()
     date = db.DateTimeProperty(auto_now_add=True)
 
@@ -102,9 +102,9 @@ class Find(webapp.RequestHandler):
         global questions
         global response_time
         global current_focus
-        question_content = self.request.get('content').strip()
+        query = self.request.get('title').strip()
         t = time.time()
-        query_terms = text2terms(question_content)
+        query_terms = text2terms(query)
         questions = []
         # NOTE: 
         # the following code uses list-properties and merge-join to implement keyword search
@@ -142,7 +142,7 @@ class Find(webapp.RequestHandler):
                                    reverse=True)
                 questions = questions[:10]
         response_time = (time.time()-t)*1000
-        current_focus = geoparsing(question_content)
+        current_focus = geoparsing(query)
         self.redirect('/')
 
 def update_termstats(term, docfreq):
@@ -165,34 +165,34 @@ class Ask(webapp.RequestHandler):
         question = Question()
         if users.get_current_user():
             question.author = users.get_current_user()
-        question.content = self.request.get('content').strip()
+        question.title = self.request.get('title').strip()
         t = time.time()
-        question.terms = text2terms(question.content)
+        question.terms = text2terms(question.title)
         if question.terms:
             question.put()
             for term in question.terms:
                 update_termstats(term, 1)
         questions = None
         response_time = (time.time()-t)*1000
-        current_focus = geoparsing(question.content)
+        current_focus = geoparsing(question.title)
         self.redirect('/')
 
 from collections import defaultdict
 
 class Load(webapp.RequestHandler):
     def post(self):
-        content_list = self.request.get('questions_file').split('\n')
+        title_list = self.request.get('questions_file').split('\n')
         questions = []
         term_dict = defaultdict(int)
-        for content in content_list:
-            content = content.strip()
-            if not content:
+        for title in title_list:
+            title = title.strip()
+            if not title:
                 continue
             question = Question()
             if users.get_current_user():
                 question.author = users.get_current_user()
-            question.content = content.decode('utf-8')
-            question.terms = text2terms(question.content)
+            question.title = title.decode('utf-8')
+            question.terms = text2terms(question.title)
             if not question.terms:
                 continue
             questions.append(question)
@@ -209,11 +209,24 @@ class Clear(webapp.RequestHandler):
         db.delete(TermStats.all(keys_only=True))
         self.redirect('/')
 
+import json
+        
+class SearchAPI(webapp.RequestHandler):
+    def get(self):
+        query = self.request.get('query').strip()
+        self.response.out.write(json.dumps(query))
+
+class QuestionAPI(webapp.RequestHandler):
+    def get(self):
+        pass
+
 application = webapp.WSGIApplication([('/', MainPage),
                                       ('/find', Find),
                                       ('/ask', Ask),
                                       ('/load', Load),
-                                      ('/clear', Clear)],
+                                      ('/clear', Clear),
+                                      ('/search', SearchAPI),
+                                      ('/question', QuestionAPI)],
                                      debug=True)
 
 def main():
