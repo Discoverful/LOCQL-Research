@@ -82,16 +82,16 @@ def find_relevant_questions(query):
         k = 0
         for term in terms:
             k += 1
-            if not best_terms:
+            if len(best_terms) < 1:
                 best_terms.append(term)
             else:
-                if (k <= 5) and (term_dict[term] <= 10):
+                if (k <= 5) and (term_dict[term] <= 100):
                     best_terms.append(term)
         if best_terms:
             question_query = Question.all()
             question_query.filter("terms IN", best_terms)
             question_query.order("-create_time")
-            questions = question_query.fetch(50) # the number of questions to be ranked
+            questions = question_query.fetch(500) # the number of questions to be ranked
             if questions:
                 questions.sort(key=lambda question: question_score(question,term_dict),
                                reverse=True)
