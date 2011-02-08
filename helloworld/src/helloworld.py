@@ -2,11 +2,10 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
-from google.appengine.api import users
 
-#import cgi
 import os
 import time
+
 from text import extract_terms
 from placemaker import geoparsing
 
@@ -15,7 +14,6 @@ response_time = "*"
 current_focus = "..."
 
 class Question(db.Model):
-    author = db.UserProperty()
     title = db.StringProperty()
     place_id = db.IntegerProperty()
     create_time = db.DateTimeProperty(auto_now_add=True)
@@ -29,15 +27,7 @@ class MainPage(webapp.RequestHandler):
         global questions
         global response_time
         global current_focus
-        if users.get_current_user():
-            url = users.create_logout_url(self.request.uri)
-            url_linktext = 'Logout'
-        else:
-            url = users.create_login_url(self.request.uri)
-            url_linktext = 'Login'
         template_values = {
-            'url': url,
-            'url_linktext': url_linktext,
             'questions': questions,
             'current_focus': current_focus,
             'response_time': response_time
@@ -85,13 +75,13 @@ def find_relevant_questions(query):
             if len(best_terms) < 1:
                 best_terms.append(term)
             else:
-                if (k <= 5) and (term_dict[term] <= 100):
+                if (k <= 5) and (term_dict[term] <= 20):
                     best_terms.append(term)
         if best_terms:
             question_query = Question.all()
             question_query.filter("terms IN", best_terms)
             question_query.order("-create_time")
-            questions = question_query.fetch(500) # the number of questions to be ranked
+            questions = question_query.fetch(100) # the number of questions to be ranked
             if questions:
                 questions.sort(key=lambda question: question_score(question,term_dict),
                                reverse=True)
@@ -129,8 +119,6 @@ class Ask(webapp.RequestHandler):
         global response_time
         global current_focus
         question = Question()
-        if users.get_current_user():
-            question.author = users.get_current_user()
         question.title = self.request.get('question_title').strip()
         t = time.time()
         question.terms = extract_terms(question.title)
@@ -155,8 +143,6 @@ class Load(webapp.RequestHandler):
             if not title:
                 continue
             question = Question()
-            if users.get_current_user():
-                question.author = users.get_current_user()
             question.title = title.decode('utf-8')
             question.terms = extract_terms(question.title)
             if not question.terms:

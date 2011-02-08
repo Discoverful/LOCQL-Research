@@ -6,7 +6,6 @@
   <body>
   	<p>
   	<img src="http://mathurl.com/4sljwzm.png" alt="LOCQL = \sum_{i=1}^\infty \sum_{j=1}^\infty knowledge(person_i,place_j)" /><br />
-    <a href="{{ url }}">{{ url_linktext }}</a> your Google account
     </p>
     <form action="/find" method="post">
       <div><input type="text" name="question_title" size="200"></input></div>
@@ -20,14 +19,7 @@
     <p>It took me <font color="red">{{ response_time }}</font> milliseconds to remember that</p>
     <ol>
     {% for question in questions %}
-      <li>
-      {% if question.author %}
-        <i>{{ question.author.nickname }}</i> asked:
-      {% else %}
-        <i>An anonymous person</i> asked:
-      {% endif %}
-      <blockquote>{{ question.title|escape }}</blockquote>
-      </li>
+      <li>{{ question.title|escape }}</li>
     {% endfor %}
     </ol>
     <hr />
