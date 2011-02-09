@@ -5,6 +5,7 @@ from google.appengine.ext import db
 
 import os
 import time
+from datetime import datetime
 
 from text import extract_terms
 from placemaker import geoparsing
@@ -14,9 +15,10 @@ response_time = "*"
 current_focus = "..."
 
 class Question(db.Model):
+    question_id = db.IntegerProperty()
     title = db.StringProperty()
     place_id = db.IntegerProperty()
-    create_time = db.DateTimeProperty(auto_now_add=True)
+    create_time = db.DateTimeProperty()
     terms = db.StringListProperty()
 
 class TermStats(db.Model):
@@ -38,9 +40,8 @@ class MainPage(webapp.RequestHandler):
         response_time = "*"
         current_focus = "..."
 
-# def jaccard_coefficient(a,b):
-#     c = [v for v in a if v in b]
-#     return float(len(c))/(len(a)+len(b)-len(c))
+def local_terms(terms, place_ids):
+    return [(term+' '+place_id) for term in terms for place_id in place_ids]
 
 def question_score(question, term_dict):
     score = 0.0
@@ -118,9 +119,10 @@ class Ask(webapp.RequestHandler):
         global questions
         global response_time
         global current_focus
-        question = Question()
-        question.title = self.request.get('question_title').strip()
         t = time.time()
+        question = Question()
+        question.create_time = datetime.utcnow()
+        question.title = self.request.get('question_title').strip()
         question.terms = extract_terms(question.title)
         if question.terms:
             question.put()
@@ -143,6 +145,7 @@ class Load(webapp.RequestHandler):
             if not title:
                 continue
             question = Question()
+            question.create_time = datetime.utcnow()
             question.title = title.decode('utf-8')
             question.terms = extract_terms(question.title)
             if not question.terms:
@@ -167,7 +170,10 @@ class SearchAPI(webapp.RequestHandler):
         query = self.request.get('query').strip()
         questions = find_relevant_questions(query)
         question_ids = [question.key().id() for question in questions]
-        self.response.out.write(json.dumps(question_ids))
+        if question_ids:
+            self.response.out.write(json.dumps(question_ids))
+        else:
+            self.error(404)  # not found
 
 class QuestionAPI(webapp.RequestHandler):
     def get(self):
