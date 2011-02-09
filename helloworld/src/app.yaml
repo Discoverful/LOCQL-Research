@@ -6,6 +6,8 @@ api_version: 1
 handlers:
 - url: /stylesheets
   static_dir: stylesheets
+- url: /_ah/queue/deferred
+  script: $PYTHON_LIB/google/appengine/ext/deferred/deferred.py
+  login: admin
 - url: /.*
   script: helloworld.py
-  
