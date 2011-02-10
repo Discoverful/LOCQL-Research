@@ -68,12 +68,16 @@ class Clear(webapp.RequestHandler):
 class SearchAPI(webapp.RequestHandler):
     def get(self):
         query = self.request.get('query')
-        found_questions = locql.find_relevant_questions(query)
-        question_ids = [question.key().id() for question in found_questions]
-        if question_ids:
-            self.response.out.write(json.dumps(question_ids))
-        else:
-            self.error(404)  # not found
+        place_ids = self.request.get('place_ids')
+        if not place_ids:
+            place_ids = []
+        max_num = self.request.get('max_num')
+        if not max_num:
+            max_num = 10
+        found_questions = locql.find_relevant_questions(query, place_ids, max_num)
+        question_ids = [question.question_id for question in found_questions]  # key().id()
+        self.response.out.write(json.dumps(question_ids))
+        # self.error(404)  # not found
 
 class QuestionAPI(webapp.RequestHandler):
     def delete(self):
