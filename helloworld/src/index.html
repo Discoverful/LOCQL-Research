@@ -8,11 +8,11 @@
   	<img src="http://mathurl.com/4sljwzm.png" alt="LOCQL = \sum_{i=1}^\infty \sum_{j=1}^\infty knowledge(person_i,place_j)" /><br />
     </p>
     <form action="/find" method="post">
-      <div><input type="text" name="question_title" size="200"></input></div>
+      <div><input type="text" name="query" size="200"></input></div>
       <div><input type="submit" value="Find Questions"></div>
     </form>
     <form action="/ask" method="post">
-      <div><input type="text" name="question_title" size="200"></input></div>
+      <div><input type="text" name="title" size="200"></input></div>
       <div><input type="submit" value="Ask a Question"></div>
     </form>
     <p>OK, so you are interested to know <blockquote>{{ current_focus }}</blockquote></p>

@@ -1,22 +1,21 @@
 from google.appengine.ext import db
 
 import logging
-from datetime import datetime
 
 from text import extract_terms
 
 class Question(db.Model):
     question_id = db.IntegerProperty()  # don't use it as key to facilitate testing
     title = db.StringProperty()
-    place_id = db.IntegerProperty()
     create_time = db.DateTimeProperty()
+    place_ids = db.ListProperty(int)
     terms = db.StringListProperty()
 
 class TermStat(db.Model):
     docfreq = db.IntegerProperty()
 
 def generate_local_terms(terms, place_ids):
-    return [(term+' '+place_id) for term in terms for place_id in place_ids]
+    return [(term+' '+str(place_id)) for term in terms for place_id in place_ids]
 
 def question_score(question, term_dict):
     score = 0.0
@@ -29,6 +28,7 @@ def question_score(question, term_dict):
 def find_relevant_questions(query, place_ids=[], max_num=10):
     query = query.strip()
     query_terms = extract_terms(query)
+    query_terms += generate_local_terms(query_terms, place_ids)
     # NOTE: 
     # the following code uses list-properties and merge-join to implement keyword search
     # but it leads to the problem of exploding index if len(query_terms) >= 2
@@ -58,7 +58,7 @@ def find_relevant_questions(query, place_ids=[], max_num=10):
             question_query = Question.all()
             question_query.filter("terms IN", best_terms)
             question_query.order("-create_time")
-            questions = question_query.fetch(100) # the number of questions to be ranked
+            questions = question_query.fetch(max_num*10) # the number of questions to be ranked
             if questions:
                 questions.sort(key=lambda question: question_score(question,term_dict),
                                reverse=True)
@@ -77,25 +77,32 @@ def update_termstats(term_dict):
             termstats[i].docfreq = more_docfreq
     db.put(termstats)
 
-def add_question(question_title):
-    question_title = question_title.strip()
-    if not question_title:
+def add_question(question):
+    if not question:
         return
-    question = Question()
-    question.create_time = datetime.utcnow()
-    question.title = question_title
-    question.terms = extract_terms(question_title)
+    question.terms = extract_terms(question.title)
+    question.terms += generate_local_terms(question.terms, question.place_ids)
     if not question.terms:
         return
     db.put(question)
     term_dict = dict(zip(question.terms, [1]*len(question.terms)))
     update_termstats(term_dict)
 
-def add_questions(question_titles):
+def add_questions(questions):
     logging.info("Adding new questions.")
-    for question_title in question_titles:
-        add_question(question_title)
+    for question in questions:
+        add_question(question)
 
+def delete_question(question_id):
+    question_query = Question.all(keys_only=True)
+    question_query.filter("question_id =", question_id)
+    db.delete(question_query.get())
+
+def delete_questions(question_ids):
+    logging.info("Deleting some questions.")
+    for question_id in question_ids:
+        delete_question(question_id)
+        
 def delete_all(Model, chunk=100):
     query = Model.all(keys_only=True)
     while True:
@@ -109,3 +116,11 @@ def delete_all_questions():
     logging.info("Deleting all questions.")
     delete_all(Question)
     delete_all(TermStat)
+    
+def get_questions(questions_ids):
+    questions = []
+    question_query = Question.all()
+    for question_id in questions_ids:
+        question_query.filter("question_id =", question_id)
+        questions.append(question_query.get())
+    return questions
