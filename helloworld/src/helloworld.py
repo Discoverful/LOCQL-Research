@@ -122,7 +122,7 @@ class QuestionAPI(webapp.RequestHandler):
     def delete(self):
         question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
         if not question_ids:
-            locql.delete_all_questions()
+            deferred.defer(locql.delete_all_questions)
         elif len(question_ids) > 100:
             self.error(400)  # bad request
         elif len(question_ids) == 1:

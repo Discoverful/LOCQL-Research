@@ -1,8 +1,7 @@
 from google.appengine.ext import db
-from google.appengine.ext import deferred
+
 import logging
 
-from datastore import Mapper
 from text import extract_terms
 
 class Question(db.Model):
@@ -104,23 +103,20 @@ def delete_questions(question_ids):
     for question_id in question_ids:
         delete_question(question_id)
         
-class QuestionDeleter(Mapper):
-    KIND = Question
-    def map(self, entity):
-        return ([], [entity])
-
-class TermStatDeleter(Mapper):
-    KIND = TermStat
-    def map(self, entity):
-        return ([], [entity])
+def delete_all(Model, chunk=100):
+    query = Model.all(keys_only=True)
+    while True:
+        keys = query.fetch(chunk)
+        if keys:
+            db.delete(keys)
+        else:
+            break
 
 def delete_all_questions():
     logging.info("Deleting all questions.")
-    question_deleter = QuestionDeleter()
-    deferred.defer(question_deleter.run)
-    termstat_deleter = TermStatDeleter()
-    deferred.defer(termstat_deleter.run)
-
+    delete_all(Question)
+    delete_all(TermStat)
+    
 def get_questions(questions_ids):
     questions = []
     question_query = Question.all()
