@@ -15,6 +15,7 @@
 <path>${GOOGLE_APP_ENGINE}</path>
 <path>${GOOGLE_APP_ENGINE}/lib/webob</path>
 <path>${GOOGLE_APP_ENGINE}/lib/yaml/lib</path>
+<path>${GOOGLE_APP_ENGINE}/lib/django_1_2</path>
 <path>${GOOGLE_APP_ENGINE}/lib/simplejson</path>
 </pydev_pathproperty>
 </pydev_project>
