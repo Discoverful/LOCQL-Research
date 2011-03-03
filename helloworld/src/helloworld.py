@@ -78,7 +78,7 @@ class Clear(webapp.RequestHandler):
         self.redirect('/')
 
 class SearchAPI(webapp.RequestHandler):
-    def get(self):
+    def post(self):
         query = self.request.get('query')
         place_ids = json.loads(self.request.get('place_ids', default_value='[]'))
         max_num = self.request.get_range('max_num', default=10)
@@ -113,9 +113,9 @@ def question2jsonobj(question):
             question.title, 
             time.mktime(question.create_time.timetuple()), 
             question.place_ids]
-    
+
 class QuestionAPI(webapp.RequestHandler):
-    def put(self):
+    def post(self):
         jsonobjs = json.loads(self.request.get('questions', default_value='[]'))
         questions = [jsonobj2question(jsonobj) for jsonobj in jsonobjs]
         if (not questions) or (len(questions)>50):
