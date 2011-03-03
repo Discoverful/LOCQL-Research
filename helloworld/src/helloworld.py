@@ -59,17 +59,22 @@ class Ask(webapp.RequestHandler):
         current_focus = geoparsing(title)
         self.redirect('/')
 
+def chunks(l, n):
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]
+
 class Load(webapp.RequestHandler):
     def post(self):
         titles = self.request.get('questions_file').split('\n')
         titles = [title.decode('utf-8') for title in titles]
         questions = [create_test_question(title) for title in titles]
-        deferred.defer(locql.add_questions, questions)
+        for chunk in chunks(questions, 50):
+            deferred.defer(locql.add_questions, chunk)
         self.redirect('/')
 
 class Clear(webapp.RequestHandler):
     def post(self):
-        deferred.defer(locql.delete_all_questions)
+        locql.delete_all_questions()
         self.redirect('/')
 
 class SearchAPI(webapp.RequestHandler):
@@ -78,8 +83,8 @@ class SearchAPI(webapp.RequestHandler):
         place_ids = json.loads(self.request.get('place_ids', default_value='[]'))
         max_num = self.request.get_range('max_num', default=10)
         if ((not query) or (len(query) > 200) or 
-            (len(place_ids) > 20) 
-            or (max_num < 1) or (max_num > 100)):
+            (len(place_ids) > 20) or 
+            (max_num < 1) or (max_num > 50)):
             self.error(400) # bad request
         else:
             found_questions = locql.find_relevant_questions(query, place_ids, max_num)
@@ -113,7 +118,7 @@ class QuestionAPI(webapp.RequestHandler):
     def put(self):
         jsonobjs = json.loads(self.request.get('questions', default_value='[]'))
         questions = [jsonobj2question(jsonobj) for jsonobj in jsonobjs]
-        if not questions:
+        if (not questions) or (len(questions)>50):
             self.error(400)  # bad request
         elif len(questions) == 1:
             locql.add_question(questions[0])
@@ -122,8 +127,8 @@ class QuestionAPI(webapp.RequestHandler):
     def delete(self):
         question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
         if not question_ids:
-            deferred.defer(locql.delete_all_questions)
-        elif len(question_ids) > 100:
+            locql.delete_all_questions()
+        elif len(question_ids) > 50:
             self.error(400)  # bad request
         elif len(question_ids) == 1:
             locql.delete_question(question_ids[0])
@@ -131,7 +136,7 @@ class QuestionAPI(webapp.RequestHandler):
             deferred.defer(locql.delete_questions, question_ids)
     def get(self):
         question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
-        if (not question_ids) or (len(question_ids)>100):
+        if (not question_ids) or (len(question_ids)>50):
             self.error(400)  # bad request
         else:
             questions = locql.get_questions(question_ids)

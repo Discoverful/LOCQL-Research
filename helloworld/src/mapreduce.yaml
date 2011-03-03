@@ -1,0 +1,15 @@
+mapreduce:
+- name: Delete all Question entities
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreKeyInputReader
+    handler: locql.delete_entity
+    params:
+    - name: entity_kind
+      default: locql.Question
+- name: Delete all TermStat entities
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreKeyInputReader
+    handler: locql.delete_entity
+    params:
+    - name: entity_kind
+      default: locql.TermStat

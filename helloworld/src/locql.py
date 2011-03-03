@@ -1,4 +1,6 @@
 from google.appengine.ext import db
+from mapreduce import operation as op
+from mapreduce import control as ctrl
 
 import logging
 
@@ -89,7 +91,7 @@ def add_question(question):
     update_termstats(term_dict)
 
 def add_questions(questions):
-    logging.info("Adding new questions.")
+    logging.info("Add new questions")
     for question in questions:
         add_question(question)
 
@@ -99,24 +101,24 @@ def delete_question(question_id):
     db.delete(question_query.get())
 
 def delete_questions(question_ids):
-    logging.info("Deleting some questions.")
+    logging.info("Delete some questions")
     for question_id in question_ids:
         delete_question(question_id)
         
-def delete_all(Model, chunk=100):
-    query = Model.all(keys_only=True)
-    while True:
-        keys = query.fetch(chunk)
-        if keys:
-            db.delete(keys)
-        else:
-            break
+def delete_entity(e):
+    yield op.db.Delete(e)
 
 def delete_all_questions():
-    logging.info("Deleting all questions.")
-    delete_all(Question)
-    delete_all(TermStat)
-    
+    logging.info("Delete all questions")
+    ctrl.start_map("Delete all Question entities", 
+                      'locql.delete_entity', 
+                      'mapreduce.input_readers.DatastoreKeyInputReader', 
+                      {'entity_kind': 'locql.Question'})
+    ctrl.start_map("Delete all TermStat entities", 
+                      'locql.delete_entity', 
+                      'mapreduce.input_readers.DatastoreKeyInputReader', 
+                      {'entity_kind': 'locql.TermStat'})
+
 def get_questions(questions_ids):
     questions = []
     question_query = Question.all()
