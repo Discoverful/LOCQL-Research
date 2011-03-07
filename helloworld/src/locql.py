@@ -79,50 +79,62 @@ def update_termstats(term_dict):
             termstats[i].docfreq = more_docfreq
     db.put(termstats)
 
-def add_question(question):
+def create_question(question):
     if not question:
-        return
+        return False
+    question_query = Question.all(keys_only=True)
+    question_query.filter("question_id =", question.question_id)
+    if question_query.get():
+        return False
+    logging.info("Create a new question")
     question.terms = extract_terms(question.title)
     question.terms += generate_local_terms(question.terms, question.place_ids)
-    if not question.terms:
-        return
+    if question.terms:
+        term_dict = dict(zip(question.terms, [1]*len(question.terms)))
+        update_termstats(term_dict)
     db.put(question)
-    term_dict = dict(zip(question.terms, [1]*len(question.terms)))
-    update_termstats(term_dict)
+    return True
 
-def add_questions(questions):
-    logging.info("Add new questions")
+def create_questions(questions):
     for question in questions:
-        add_question(question)
+        create_question(question)
 
-def delete_question(question_id):
+def delete_question(question):
+    if not question:
+        return False
     question_query = Question.all(keys_only=True)
-    question_query.filter("question_id =", question_id)
-    db.delete(question_query.get())
+    question_query.filter("question_id =", question.question_id)
+    quertion_key = question_query.get()
+    if not quertion_key:
+        return False
+    logging.info("Create a new question")
+    question.terms = extract_terms(question.title)
+    question.terms += generate_local_terms(question.terms, question.place_ids)
+    if question.terms:
+        term_dict = dict(zip(question.terms, [-1]*len(question.terms)))
+        update_termstats(term_dict)
+    db.delete(quertion_key)
+    return True
 
-def delete_questions(question_ids):
-    logging.info("Delete some questions")
-    for question_id in question_ids:
-        delete_question(question_id)
-        
 def delete_entity(e):
+    "The MapReduce handler for batch deletion"
     yield op.db.Delete(e)
 
 def delete_all_questions():
-    logging.info("Delete all questions")
+    logging.info("Delete all existing questions")
     ctrl.start_map("Delete all Question entities", 
-                      'locql.delete_entity', 
-                      'mapreduce.input_readers.DatastoreKeyInputReader', 
-                      {'entity_kind': 'locql.Question'})
+                   'locql.delete_entity', 
+                   'mapreduce.input_readers.DatastoreKeyInputReader', 
+                   {'entity_kind': 'locql.Question'})
     ctrl.start_map("Delete all TermStat entities", 
-                      'locql.delete_entity', 
-                      'mapreduce.input_readers.DatastoreKeyInputReader', 
-                      {'entity_kind': 'locql.TermStat'})
+                   'locql.delete_entity', 
+                   'mapreduce.input_readers.DatastoreKeyInputReader',
+                   {'entity_kind': 'locql.TermStat'})
 
-def get_questions(questions_ids):
+def get_questions(question_ids):
     questions = []
-    question_query = Question.all()
-    for question_id in questions_ids:
+    for question_id in question_ids:
+        question_query = Question.all()
         question_query.filter("question_id =", question_id)
         questions.append(question_query.get())
     return questions

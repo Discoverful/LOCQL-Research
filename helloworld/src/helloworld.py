@@ -11,34 +11,34 @@ import simplejson as json
 from placemaker import geoparsing
 import locql
 
-found_questions = None
+relevant_questions = None
 response_time = "*"
 current_focus = "..."
 
 class MainPage(webapp.RequestHandler):
     def get(self):
-        global found_questions
+        global relevant_questions
         global response_time
         global current_focus
         template_values = {
-            'found_questions': found_questions,
+            'relevant_questions': relevant_questions,
             'current_focus': current_focus,
             'response_time': response_time
         }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
-        found_questions = None
+        relevant_questions = None
         response_time = "*"
         current_focus = "..."
 
 class Find(webapp.RequestHandler):
     def post(self):
-        global found_questions
+        global relevant_questions
         global response_time
         global current_focus
         t = time.time()
         query = self.request.get('query').strip()
-        found_questions = locql.find_relevant_questions(query)
+        relevant_questions = locql.find_relevant_questions(query)
         response_time = (time.time()-t)*1000
         current_focus = geoparsing(query)
         self.redirect('/')
@@ -54,7 +54,7 @@ class Ask(webapp.RequestHandler):
         t = time.time()
         title = self.request.get('title')
         question = create_test_question(title)
-        locql.add_question(question)
+        locql.create_question(question)
         response_time = (time.time()-t)*1000
         current_focus = geoparsing(title)
         self.redirect('/')
@@ -69,7 +69,7 @@ class Load(webapp.RequestHandler):
         titles = [title.decode('utf-8') for title in titles]
         questions = [create_test_question(title) for title in titles]
         for chunk in chunks(questions, 50):
-            deferred.defer(locql.add_questions, chunk)
+            deferred.defer(locql.create_questions, chunk)
         self.redirect('/')
 
 class Clear(webapp.RequestHandler):
@@ -82,14 +82,18 @@ class SearchAPI(webapp.RequestHandler):
         query = self.request.get('query')
         place_ids = json.loads(self.request.get('place_ids', default_value='[]'))
         max_num = self.request.get_range('max_num', default=10)
+        with_titles = self.request.get_range('with_titles', default=0)
         if ((not query) or (len(query) > 200) or 
             (len(place_ids) > 20) or 
             (max_num < 1) or (max_num > 50)):
             self.error(400) # bad request
         else:
-            found_questions = locql.find_relevant_questions(query, place_ids, max_num)
-            question_ids = [question.question_id for question in found_questions]
-            self.response.out.write(json.dumps(question_ids))
+            relevant_questions = locql.find_relevant_questions(query, place_ids, max_num)
+            if not with_titles:
+                search_results = [question.question_id for question in relevant_questions]
+            else:
+                search_results = [(question.question_id,question.title) for question in relevant_questions]
+            self.response.out.write(json.dumps(search_results))
 
 def jsonobj2question(jsonobj):
     if ((not jsonobj) or (len(jsonobj) < 4)):
@@ -113,27 +117,28 @@ def question2jsonobj(question):
             question.title, 
             time.mktime(question.create_time.timetuple()), 
             question.place_ids]
-    
+
 class QuestionAPI(webapp.RequestHandler):
-    def put(self):
-        jsonobjs = json.loads(self.request.get('questions', default_value='[]'))
-        questions = [jsonobj2question(jsonobj) for jsonobj in jsonobjs]
-        if (not questions) or (len(questions)>50):
+    def post(self):
+        jsonobj = json.loads(self.request.get('question', default_value='[]'))
+        question = jsonobj2question(jsonobj)
+        if not question:
             self.error(400)  # bad request
-        elif len(questions) == 1:
-            locql.add_question(questions[0])
+        operation = self.request.get('operation', default_value='create')
+        if operation == 'create':
+            if locql.create_question(question):
+                self.response.set_status(200)  # success
+            else:
+                self.error(400)  # failure
+        elif operation == 'delete':
+            if locql.delete_question(question):
+                self.response.set_status(201)  # success
+            else:
+                self.error(400)  # failure
         else:
-            deferred.defer(locql.add_questions, questions)
+            self.error(400)  # bad request
     def delete(self):
-        question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
-        if not question_ids:
-            locql.delete_all_questions()
-        elif len(question_ids) > 50:
-            self.error(400)  # bad request
-        elif len(question_ids) == 1:
-            locql.delete_question(question_ids[0])
-        else:
-            deferred.defer(locql.delete_questions, question_ids)
+        locql.delete_all_questions()
     def get(self):
         question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
         if (not question_ids) or (len(question_ids)>50):
