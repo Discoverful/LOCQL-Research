@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import simplejson as json
 
-from placemaker import geoparsing
+from placemaker import annotate_places
 import locql
 
 relevant_questions = None
@@ -40,7 +40,7 @@ class Find(webapp.RequestHandler):
         query = self.request.get('query').strip()
         relevant_questions = locql.find_relevant_questions(query)
         response_time = (time.time()-t)*1000
-        current_focus = geoparsing(query)
+        current_focus = annotate_places(query)
         self.redirect('/')
 
 def create_test_question(title):
@@ -56,7 +56,7 @@ class Ask(webapp.RequestHandler):
         question = create_test_question(title)
         locql.create_question(question)
         response_time = (time.time()-t)*1000
-        current_focus = geoparsing(title)
+        current_focus = annotate_places(title)
         self.redirect('/')
 
 def chunks(l, n):

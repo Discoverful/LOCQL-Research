@@ -8,26 +8,37 @@ ns = "{%s}" % 'http://wherein.yahooapis.com/v1/schema'
 
 def geoparsing(text):
     if not text:
-        return ''
+        return []
     params = urllib.urlencode({
-    	'appid': appid,
+        'appid': appid,
         'documentType': 'text/plain',
-    	'documentContent': text.encode('utf-8')
+        'documentContent': text.encode('utf-8')
     })
     placemaker_xml = urllib2.urlopen(url, params)
     if not placemaker_xml:
-        return text
+        return []
     placemaker_etree = ET.parse(placemaker_xml)
     placemaker_xml.close()
     references = placemaker_etree.find(ns+'document/'+ns+'referenceList')
     if not references:
-        return text
+        return []
     place_segments = []
     for ref in references:
         start = int(ref.findtext(ns+'start'))
         end = int(ref.findtext(ns+'end'))
         place_segments.append((start,end))
     place_segments.sort()
+    return place_segments
+
+def extract_places(text):
+    place_segments = geoparsing(text)
+    if not place_segments:
+        return []
+    places = [text[start:end] for (start,end) in place_segments]
+    return places
+
+def annotate_places(text):
+    place_segments = geoparsing(text)
     result = ""
     i = 0
     for (start,end) in place_segments:

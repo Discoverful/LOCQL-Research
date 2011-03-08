@@ -18,7 +18,7 @@
     <p>OK, so you are interested to know <blockquote>{{ current_focus }}</blockquote></p>
     <p>It took me <font color="red">{{ response_time }}</font> milliseconds to remember that</p>
     <ol>
-    {% for question in found_questions %}
+    {% for question in relevant_questions %}
       <li>{{ question.title|escape }}</li>
     {% endfor %}
     </ol>
