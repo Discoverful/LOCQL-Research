@@ -3,7 +3,7 @@ from mapreduce import operation as op
 from mapreduce import control as ctrl
 
 import logging
-from math import sqrt
+import math
 
 from text import extract_terms
 
@@ -26,8 +26,8 @@ def question_score(question, term_dict):
         if term in term_dict:
             term_df = term_dict[term]
             if term_df > 0:
-                score += sqrt(1.0/term_df)
-    score /= sqrt(len(question.terms))
+                score += math.pow(1.0/term_df,0.25)
+    score /= math.pow(len(question.terms),0.25)
     return score
 
 def find_relevant_questions(query, place_ids=[], max_num=10):
