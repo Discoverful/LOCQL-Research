@@ -26,8 +26,9 @@ def question_score(question, term_dict):
         if term in term_dict:
             term_df = term_dict[term]
             if term_df > 0:
-                score += math.pow(1.0/term_df,0.25)
-    score /= math.pow(len(question.terms),0.25)
+                score += math.sqrt(1.0/term_df)
+    question_len = len([term for term in question.terms if term.find(' ') < 0])
+    score /= math.sqrt(question_len)
     return score
 
 def find_relevant_questions(query, place_ids=[], max_num=10):
