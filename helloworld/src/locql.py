@@ -22,13 +22,16 @@ def generate_local_terms(terms, place_ids):
 
 def question_score(question, term_dict):
     score = 0.0
+    question_len = 0
     for term in question.terms:
+        if term.find(' ') < 0:
+            question_len += 1
         if term in term_dict:
             term_df = term_dict[term]
             if term_df > 0:
-                score += math.sqrt(1.0/term_df)
-    question_len = len([term for term in question.terms if term.find(' ') < 0])
-    score /= math.sqrt(question_len)
+                score += math.pow(1.0/term_df,0.50)
+    if question_len > 0:
+        score /= math.pow(question_len,0.25)
     return score
 
 def find_relevant_questions(query, place_ids=[], max_num=10):

@@ -8,8 +8,15 @@ import time
 from datetime import datetime
 import simplejson as json
 
-from placemaker import annotate_places
 import locql
+from placemaker import annotate_places
+
+RUNNING_APP_ENGINE_LOCAL_SERVER = os.environ.get('SERVER_SOFTWARE', 'Dev').startswith('Dev') 
+if RUNNING_APP_ENGINE_LOCAL_SERVER:
+    APPID_WHITELIST = ["localhost"]
+else:
+    APPID_WHITELIST = ["www.locql.com"]
+PASSWORD = "knock,knock."
 
 relevant_questions = None
 response_time = "*"
@@ -78,7 +85,19 @@ class Clear(webapp.RequestHandler):
         self.redirect('/')
 
 class SearchAPI(webapp.RequestHandler):
+    def auth(self):
+        appid = self.request.get('appid')
+        password = self.request.get('password')
+        if (appid in APPID_WHITELIST) and (password == PASSWORD):
+            return True
+        else:
+            self.error(401) # unauthorised
+            return False
+
+class SearchURI(SearchAPI):
     def get(self):
+        if not self.auth():
+            return
         query = self.request.get('query')
         place_ids = json.loads(self.request.get('place_ids', default_value='[]'))
         max_num = self.request.get_range('max_num', default=10)
@@ -118,8 +137,10 @@ def question2jsonobj(question):
             time.mktime(question.create_time.timetuple()), 
             question.place_ids]
 
-class QuestionAPI(webapp.RequestHandler):
+class QuestionURI(SearchAPI):
     def post(self):
+        if not self.auth():
+            return
         jsonobj = json.loads(self.request.get('question', default_value='[]'))
         question = jsonobj2question(jsonobj)
         if not question:
@@ -137,9 +158,9 @@ class QuestionAPI(webapp.RequestHandler):
                 self.error(400)  # failure
         else:
             self.error(400)  # bad request
-    def delete(self):
-        locql.delete_all_questions()
     def get(self):
+        if not self.auth():
+            return
         question_ids = json.loads(self.request.get('question_ids', default_value='[]'))
         if (not question_ids) or (len(question_ids)>50):
             self.error(400)  # bad request
@@ -153,8 +174,8 @@ application = webapp.WSGIApplication([('/', MainPage),
                                       ('/ask', Ask),
                                       ('/load', Load),
                                       ('/clear', Clear),
-                                      ('/search', SearchAPI),
-                                      ('/question', QuestionAPI)],
+                                      ('/search', SearchURI),
+                                      ('/question', QuestionURI)],
                                      debug=True)
 
 def main():
